@@ -5,23 +5,18 @@ export default {
     components:{
         Menu
     },
+
     data(){
         return {  
-            //urlBaseApi: "http://localhost:5255/api/fido",  
-            urlBaseApi: "http://192.168.1.11:5255/api/fido",        
-            registro:
+            //urlBaseApi: "http://localhost:5255/api/fido",          
+            urlBaseApi: "http://192.168.1.11:5255/api/fido",          
+            dato:
             {
-                Nombre:"",
-                Telefono:"",
-                Direccion:"",
-                Correo:"",
-                Id_Raza:0,
-                Peso_Perro: 0,
-                codigoCliente: ""                             
+                codigoCliente:localStorage.getItem('codigoPremio')                 
             },
-            razas: [],                                            
-            textoBoton : "Validar",            
-            tituloCard: "Ingrese los siguientes datos para validar el código único de la compra realizada"           
+            premios: [],                                            
+            textoBoton : "Canjear",            
+            tituloCard: "Seleccione el premio que desea canjear"           
         }
     },
     methods:{        
@@ -36,13 +31,18 @@ export default {
                 timer: 2000
             });            
         },        
-        async obtenerRazas(){ 
+        async obtenerPremios(dato){ 
 
-            const response = await fetch(`${this.urlBaseApi}/obtenerRazas`);
+            const response = await fetch(`${this.urlBaseApi}/ConsultarPremio`, 
+            {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(this.dato)
+            });
 
             const data = await response.json();
                 
-            this.razas = data.data;                  
+            this.premios = data.data;                  
         },
         async validarCodigo(){ 
 
@@ -64,12 +64,7 @@ export default {
             const resp = await response.json(); 
 
             if (resp.error != 1) { 
-                this.mostrarMensaje('Bien!', resp.mensaje, 'success');      
-                // Guardar el estado de validación en localStorage o Vuex
-                localStorage.setItem('codigoValidado', 'true');
-                localStorage.setItem('codigoPremio', this.registro.codigoCliente);
-                // Redirigir a la página premio.vue
-                this.$router.push({ name: 'Premio' });          
+                this.mostrarMensaje('Bien!', resp.mensaje, 'success');                
             }
             else{        
                 this.mostrarMensaje('Error!', resp.mensaje, 'error');
@@ -78,7 +73,16 @@ export default {
     },    
     async mounted()
     {        
-        this.obtenerRazas();
+        this.obtenerPremios();
+    },
+
+         
+ // Guardia de ruta al abandonar la página de premios
+     beforeRouteLeave(to, from, next) 
+    {
+      // Remover el estado de validación cuando el usuario salga de la página
+      localStorage.removeItem('codigoValidado');
+      next(); // Permitir la navegación
     }
 }
 
@@ -101,7 +105,25 @@ export default {
                             {{ tituloCard }}
                         </div>
                         <div class="card-body">
-                            <form class="row g-3">
+                            <div class="container">
+                                <div class="row">
+                                  <!-- Aquí usamos v-for para iterar sobre el array 'results' -->
+                                  <div class="col-md-4" v-for="premio in this.premios" :key="index">
+                                    <div class="card">
+                                      <!-- Imagen dinámica -->
+                                      <img :src="premio.src" class="card-img-top" :alt="premio.Titulo"/>
+                                      <div class="card-body">
+                                        <!-- Título dinámico -->
+                                        <h5 class="card-title">{{ premio.descripcion }}</h5>
+                                        <!-- Texto dinámico -->
+                                        <p class="card-text">{{ premio.titulo }}</p>
+                                        <a href="" class="btn btn-primary" data-mdb-ripple-init>Button</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                           <!--- <form class="row g-3">
                                 <div class="col-md-3">
                                     <label for="txtNombre" class="form-label">Nombre</label>
                                     <input type="text" class="form-control" id="txtNombre" required v-model="registro.Nombre" >            
@@ -138,7 +160,7 @@ export default {
                                 <div class="col-md-12 text-center">
                                     <button  class="btn btn-success mx-2" @click.prevent="validarCodigo">{{textoBoton}}</button>                                                     
                                 </div>      
-                            </form>
+                            </form>-->
                         </div>
                     </div>
                 </div>
